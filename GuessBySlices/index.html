@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Guess from the Slices!</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="game-container">
+    <header>
+      <h1>Guess from the Slices!
+      <br>🎬Lights! Camera! Action! 🎬
+      </h1>
+
+      <div id="scoreboard">
+        <span>P1: <strong id="score-p1">0</strong></span>
+        <span id="round-tracker">Round 1 / 3</span>
+        <span>P2: <strong id="score-p2">0</strong></span>
+      </div>
+    </header>
+
+    <!-- STEP 1: PLAYER CREATES PUZZLE -->
+    <div id="screen-picker" class="screen active">
+      <h2 id="picker-turn-label">Player 1: Pick an Image</h2>
+      <div class="drop-zone" id="drop-zone">
+        <p>📁 Drag & Drop Movie Poster or Album Cover<br>or <strong>Click to Browse</strong></p>
+        <input type="file" id="image-input" accept="image/*" hidden>
+      </div>
+      <input type="text" id="answer-input" placeholder="Enter full movie/album name..." />
+      <button id="btn-submit-puzzle" disabled>Lock In Puzzle 🔒</button>
+    </div>
+
+<!-- STEP 2: PLAYER GUESSES -->
+<div id="screen-guess" class="screen">
+  <h2 id="guesser-turn-label">Player 2: Guess the Title!</h2>
+  
+  <!-- 4 Fragments Grid rendered dynamically here -->
+  <div id="fragment-board" class="fragment-board"></div>
+
+  <div class="guess-controls">
+    <input type="text" id="guess-input" placeholder="What movie or album is this?" />
+    <button id="btn-submit-guess">Submit Guess</button>
+    <p id="attempts-left">Attempts left: <strong>3</strong></p>
+  </div>
+</div>
+
+    <!-- STEP 3: ROUND RESULT REVEAL -->
+    <div id="screen-result" class="screen">
+      <h2 id="result-status">Correct! 🎉</h2>
+      <div class="reveal-container">
+        <img id="revealed-image" src="" alt="Revealed Cover" />
+        <p id="revealed-title"></p>
+      </div>
+      <button id="btn-next-round">Next Round ➔</button>
+    </div>
+  </div>
+
+  <canvas id="offscreen-canvas" style="display: none;"></canvas>
+  <script src="game.js"></script>
+</body>
+</html>
