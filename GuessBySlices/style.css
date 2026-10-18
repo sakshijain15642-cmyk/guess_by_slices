@@ -1,0 +1,170 @@
+/* ==========================================
+   RESPONSIVE GAME STYLING (STYLE.CSS)
+   ================================---------- */
+
+:root {
+  --bg-color: #f4f1ea;
+  --card-bg: #ffffff;
+  --primary: #2c3e50;
+  --accent: #e67e22;
+}
+
+* {
+  box-sizing: border-box; /* Ensures padding doesn't push elements out of bounds */
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-color);
+  color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 15px; /* Prevents container from touching screen edges on mobile */
+}
+
+.game-container {
+  background: var(--card-bg);
+  width: 100%;
+  max-width: 600px; /* Scales down automatically on mobile, caps at 600px on desktop */
+  padding: 20px 25px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+/* Header & Scoreboard */
+header h1 {
+  font-size: 1.8rem;
+  margin-top: 5px;
+  margin-bottom: 15px;
+  color: var(--primary);
+}
+
+#scoreboard {
+  display: flex;
+  justify-content: space-between;
+  background: #f0eee6;
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  font-weight: bold;
+}
+
+/* Screen States */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* Drop Zone */
+.drop-zone {
+  border: 3px dashed #b0ada6;
+  border-radius: 12px;
+  padding: 30px 20px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  background: #faf8f5;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.drop-zone:hover { 
+  background: #f3efe6; 
+  border-color: var(--accent);
+}
+
+.drop-zone p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #555;
+}
+
+/* Inputs & Buttons */
+input[type="text"] {
+  width: 100%;
+  padding: 12px 15px;
+  font-size: 1rem;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input[type="text"]:focus {
+  border-color: var(--primary);
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: bold;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+button:hover:not(:disabled) {
+  background-color: #34495e;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+button:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+/* ==========================================
+   RESPONSIVE 2X2 FRAGMENT GRID
+   ================================---------- */
+
+.fragment-board {
+  display: grid;
+  /* Uses flexible sizing: tiles shrink gracefully on mobile screens */
+  grid-template-columns: repeat(2, minmax(110px, 140px));
+  grid-template-rows: repeat(2, minmax(110px, 140px));
+  gap: 12px;
+  justify-content: center;
+  padding: 15px 0;
+}
+
+.fragment-tile {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* Keeps tiles perfectly square automatically */
+  border-radius: 8px;
+  background-size: 200% 200%; /* Scales background crop relative to tile size */
+  background-position: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  border: 3px solid #fff;
+}
+
+/* Reveal Screen */
+.reveal-container img {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  margin-bottom: 10px;
+}
+
+#revealed-title {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: var(--primary);
+  margin-bottom: 20px;
+}
+
+#result-status {
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+}
