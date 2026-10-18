@@ -14,6 +14,29 @@ const state = {
   attemptsLeft: 3
 };
 
+// ==========================================
+// ADD CLIPBOARD PASTE SUPPORT (CTRL+V)
+// ==========================================
+window.addEventListener('paste', (e) => {
+  const items = e.clipboardData.items;
+  
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1) {
+      const blob = items[i].getAsFile();
+      const reader = new FileReader();
+      
+      reader.onload = (event) => {
+        state.currentImageSrc = event.target.result;
+        btnSubmitPuzzle.disabled = false;
+        dropZone.querySelector('p').innerHTML = `✅ Image Pasted from Clipboard!`;
+      };
+      
+      reader.readAsDataURL(blob);
+      break;
+    }
+  }
+});
+
 // DOM Elements
 const dropZone = document.getElementById('drop-zone');
 const imageInput = document.getElementById('image-input');
