@@ -1,230 +1,298 @@
 // ==========================================
-// GUESS FROM THE SLICES: 4-FRAGMENT EDITION (GAME.JS)
+// GAME STATE & CONFIGURATION
 // ==========================================
-
-// Game State Management
 const state = {
-  round: 1,
-  maxRounds: 3,
-  scores: { p1: 0, p2: 0 },
-  currentPicker: 1, // Player 1 starts as the creator
-  currentGuesser: 2, // Player 2 starts as the guesser
-  currentImageSrc: null,
-  currentAnswer: "",
-  attemptsLeft: 3
+  p1Name: "Player 1",
+  p2Name: "Player 2",
+  p1Score: 0,
+  p2Score: 0,
+  currentImageSrc: "",
+  secretTitle: "",
+  attemptsLeft: 3,
+  activePlayer: 1,
+  tilePositions: []
 };
 
-// ==========================================
-// ROBUST CLIPBOARD PASTE SUPPORT
-// ==========================================
-dropZone.addEventListener('paste', (e) => {
-  e.preventDefault();
-  const items = e.clipboardData.items;
-  
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].type.indexOf('image') !== -1) {
-      const blob = items[i].getAsFile();
-      const reader = new FileReader();
-      
-      reader.onload = (event) => {
-        state.currentImageSrc = event.target.result;
-        btnSubmitPuzzle.disabled = false;
-        dropZone.querySelector('p').innerHTML = `✅ Image Pasted Successfully!`;
-      };
-      
-      reader.readAsDataURL(blob);
-      break;
-    }
-  }
-});
 // DOM Elements
+const setupScreen = document.getElementById('setup-screen');
+const uploadScreen = document.getElementById('upload-screen');
+const guessScreen = document.getElementById('guess-screen');
+const revealScreen = document.getElementById('reveal-screen');
+
+const btnStartMatch = document.getElementById('btn-start-match');
 const dropZone = document.getElementById('drop-zone');
-const imageInput = document.getElementById('image-input');
-const answerInput = document.getElementById('answer-input');
-const btnSubmitPuzzle = document.getElementById('btn-submit-puzzle');
-const fragmentBoard = document.getElementById('fragment-board');
+const fileInput = document.getElementById('file-input');
+const secretTitleInput = document.getElementById('secret-title-input');
+const btnLockPuzzle = document.getElementById('btn-lock-puzzle');
 
-// 1. FILE UPLOAD & HANDLING
-dropZone.addEventListener('click', () => imageInput.click());
+const guessInput = document.getElementById('guess-input');
+const btnSubmitGuess = document.getElementById('btn-submit-guess');
+const attemptsLeftSpan = document.getElementById('attempts-left');
+const scoreboard = document.getElementById('scoreboard');
 
-imageInput.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+const turnIndicatorUpload = document.getElementById('turn-indicator-upload');
+const turnIndicatorGuess = document.getElementById('turn-indicator-guess');
+const revealImg = document.getElementById('reveal-img');
+const revealedTitle = document.getElementById('revealed-title');
+const resultStatus = document.getElementById('result-status');
+const btnNextRound = document.getElementById('btn-next-round');
 
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    state.currentImageSrc = event.target.result;
-    btnSubmitPuzzle.disabled = false;
-    dropZone.querySelector('p').innerHTML = `✅ Image Loaded Successfully!<br><strong>${file.name}</strong>`;
-  };
-  reader.readAsDataURL(file);
-});
-
-// Drag & Drop visual feedback
-['dragenter', 'dragover'].forEach(eventName => {
-  dropZone.addEventListener(eventName, (e) => { e.preventDefault(); dropZone.style.background = '#faf8f5'; });
-});
-['dragleave', 'drop'].forEach(eventName => {
-  dropZone.addEventListener(eventName, (e) => { e.preventDefault(); dropZone.style.background = 'transparent'; });
-});
-dropZone.addEventListener('drop', (e) => {
-  const file = e.dataTransfer.files[0];
-  if (file) {
-    imageInput.files = e.dataTransfer.files;
-    const event = new Event('change');
-    imageInput.dispatchEvent(event);
-  }
-});
-
-
-// 2. GENERATE 4 IMAGE FRAGMENTS (Quadrants)
-function generateFragments(imgSrc) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.src = imgSrc;
-    img.onload = () => {
-      const canvas = document.getElementById('offscreen-canvas');
-      const ctx = canvas.getContext('2d');
-
-      // Normalize source image to a square working size (300x300px)
-      const size = 300;
-      canvas.width = size;
-      canvas.height = size;
-      ctx.drawImage(img, 0, 0, size, size);
-
-      const half = size / 2; // 150px per quadrant
-      
-      // Define crop coordinates for the 4 quadrants
-      const coordinates = [
-        { x: 0, y: 0 },       // Top-Left
-        { x: half, y: 0 },   // Top-Right
-        { x: 0, y: half },   // Bottom-Left
-        { x: half, y: half } // Bottom-Right
-      ];
-
-      const fragmentDataUrls = coordinates.map(coord => {
-        const tileCanvas = document.createElement('canvas');
-        tileCanvas.width = 140;
-        tileCanvas.height = 140;
-        const tileCtx = tileCanvas.getContext('2d');
-
-        // Draw cropped quadrant onto the tile canvas
-        tileCtx.drawImage(
-          canvas, 
-          coord.x, coord.y, half, half, // Source crop area
-          0, 0, 140, 140                // Destination size
-        );
-
-        return tileCanvas.toDataURL();
-      });
-
-      resolve(fragmentDataUrls);
-    };
-  });
-}
-
-
-// 3. PUZZLE SUBMISSION & SWITCHING TO GUESS SCREEN
-btnSubmitPuzzle.addEventListener('click', async () => {
-  state.currentAnswer = answerInput.value.trim().toLowerCase();
-  if (!state.currentAnswer || !state.currentImageSrc) return;
-
-  // Generate 4 fragments from the uploaded image
-  const fragments = await generateFragments(state.currentImageSrc);
-  
-  fragmentBoard.innerHTML = '';
-  
-  // Render Fragment Tiles into the grid
-  fragments.forEach(dataUrl => {
-    const tile = document.createElement('div');
-    tile.className = 'fragment-tile';
-    tile.style.backgroundImage = `url(${dataUrl})`;
-    fragmentBoard.appendChild(tile);
-  });
-
-  // Switch to Guesser View
-  switchScreen('screen-guess');
-  state.attemptsLeft = 3;
-  document.getElementById('guesser-turn-label').innerText = `Player ${state.currentGuesser}: Guess the Title!`;
-  document.getElementById('attempts-left').innerHTML = `Attempts left: <strong>${state.attemptsLeft}</strong>`;
-  document.getElementById('guess-input').value = '';
-});
-
-
-// 4. GUESS VALIDATION (Fuzzy String Matching)
-document.getElementById('btn-submit-guess').addEventListener('click', checkGuess);
-document.getElementById('guess-input').addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') checkGuess();
-});
-
-function checkGuess() {
-  const userGuess = document.getElementById('guess-input').value.trim().toLowerCase();
-  if (!userGuess) return;
-  
-  // Flexible check: matches if guess is included in the stored title
-  const isCorrect = userGuess.length > 1 && state.currentAnswer.includes(userGuess);
-
-  if (isCorrect) {
-    state.scores[`p${state.currentGuesser}`] += 10;
-    showResult(true);
-  } else {
-    state.attemptsLeft--;
-    if (state.attemptsLeft <= 0) {
-      showResult(false);
-    } else {
-      document.getElementById('attempts-left').innerHTML = `Wrong guess! Attempts left: <strong>${state.attemptsLeft}</strong>`;
-      document.getElementById('guess-input').value = '';
-    }
-  }
-}
-
-
-// 5. RESULT SCREEN & ROUND PROGRESSION
-function showResult(won) {
-  switchScreen('screen-result');
-  document.getElementById('score-p1').innerText = state.scores.p1;
-  document.getElementById('score-p2').innerText = state.scores.p2;
-  document.getElementById('revealed-image').src = state.currentImageSrc;
-  document.getElementById('revealed-title').innerText = `Title: ${state.currentAnswer.toUpperCase()}`;
-  
-  const statusEl = document.getElementById('result-status');
-  if (won) {
-    statusEl.innerText = `🎉 Player ${state.currentGuesser} guessed it right!`;
-  } else {
-    statusEl.innerText = `❌ Out of guesses! Player ${state.currentPicker} defended their puzzle.`;
-    state.scores[`p${state.currentPicker}`] += 5; // Bonus points to creator if guesser fails
-  }
-}
-
-document.getElementById('btn-next-round').addEventListener('click', () => {
-  // Check if match is over (Total rounds = maxRounds * 2 turns)
-  if (state.round >= state.maxRounds * 2) {
-    const winner = state.scores.p1 > state.scores.p2 ? "Player 1" : state.scores.p2 > state.scores.p1 ? "Player 2" : "It's a Tie!";
-    alert(`🏆 MATCH OVER!\nFinal Scores -> P1: ${state.scores.p1} | P2: ${state.scores.p2}\nWinner: ${winner}`);
-    location.reload();
-    return;
-  }
-  
-  state.round++;
-  
-  // Swap Picker and Guesser roles for the next round
-  [state.currentPicker, state.currentGuesser] = [state.currentGuesser, state.currentPicker];
-  
-  document.getElementById('round-tracker').innerText = `Round ${Math.ceil(state.round / 2)} / ${state.maxRounds}`;
-  document.getElementById('picker-turn-label').innerText = `Player ${state.currentPicker}: Pick an Image`;
-  
-  // Reset fields
-  answerInput.value = '';
-  btnSubmitPuzzle.disabled = true;
-  dropZone.querySelector('p').innerHTML = `📁 Drag & Drop Movie Poster or Album Cover<br>or <strong>Click to Browse</strong>`;
-  state.currentImageSrc = null;
-  
-  switchScreen('screen-picker');
-});
-
-// Helper Function to Toggle Screens
+// Helper: Switch Screens
 function switchScreen(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(screenId).classList.add('active');
 }
+
+// Helper: Update Scoreboard UI
+function updateScoreboard() {
+  scoreboard.style.display = 'flex';
+  scoreboard.innerHTML = `
+    <span>${state.p1Name}: ${state.p1Score}</span>
+    <span>${state.p2Name}: ${state.p2Score}</span>
+  `;
+}
+
+// Helper: Update Turn Text
+function updateTurnText() {
+  const setter = state.activePlayer === 1 ? state.p1Name : state.p2Name;
+  const guesser = state.activePlayer === 1 ? state.p2Name : state.p1Name;
+  
+  turnIndicatorUpload.innerText = `${setter}: Set the Puzzle`;
+  turnIndicatorGuess.innerText = `${guesser}'s Turn to Guess!`;
+}
+
+// ==========================================
+// 1. SETUP NAMES
+// ==========================================
+btnStartMatch.addEventListener('click', () => {
+  const p1 = document.getElementById('p1-name-input').value.trim();
+  const p2 = document.getElementById('p2-name-input').value.trim();
+  
+  if (p1) state.p1Name = p1;
+  if (p2) state.p2Name = p2;
+
+  updateScoreboard();
+  updateTurnText();
+  switchScreen('upload-screen');
+});
+
+// ==========================================
+// 2. IMAGE UPLOAD & CLIPBOARD PASTE SUPPORT
+// ==========================================
+dropZone.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) handleImageFile(file);
+});
+
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); });
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file) handleImageFile(file);
+});
+
+dropZone.addEventListener('paste', (e) => {
+  e.preventDefault();
+  const items = e.clipboardData.items;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1) {
+      const blob = items[i].getAsFile();
+      handleImageFile(blob);
+      break;
+    }
+  }
+});
+
+function handleImageFile(file) {
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    state.currentImageSrc = event.target.result;
+    btnLockPuzzle.disabled = false;
+    dropZone.querySelector('p').innerHTML = `✅ Image Loaded Successfully!`;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ==========================================
+// 3. LOCK IN PUZZLE & SETUP ZOOMED CROPS
+// ==========================================
+btnLockPuzzle.addEventListener('click', () => {
+  const title = secretTitleInput.value.trim();
+  
+  if (!state.currentImageSrc) {
+    alert("Please upload or paste an image first!");
+    return;
+  }
+  if (!title) {
+    alert("Please enter the movie/album title!");
+    secretTitleInput.focus();
+    return;
+  }
+
+  state.secretTitle = title;
+  state.attemptsLeft = 3;
+  attemptsLeftSpan.innerText = state.attemptsLeft;
+  guessInput.value = "";
+  guessInput.placeholder = "Type your guess...";
+
+  setupFragmentBoard(state.currentImageSrc);
+  updateFragmentVisibility();
+
+  updateTurnText();
+  switchScreen('guess-screen');
+});
+
+function setupFragmentBoard(imgSrc) {
+  state.tilePositions = [];
+  for (let i = 0; i < 4; i++) {
+    const x = Math.floor(Math.random() * 70) + 15;
+    const y = Math.floor(Math.random() * 70) + 15;
+    state.tilePositions.push(`${x}% ${y}%`);
+  }
+
+  for (let i = 0; i < 4; i++) {
+    const tile = document.getElementById(`tile-${i}`);
+    tile.style.backgroundImage = `url(${imgSrc})`;
+    tile.style.backgroundPosition = state.tilePositions[i];
+  }
+}
+
+function updateFragmentVisibility() {
+  for (let i = 0; i < 4; i++) {
+    const tile = document.getElementById(`tile-${i}`);
+    let shouldShow = false;
+
+    if (state.attemptsLeft === 3 && i === 0) shouldShow = true;
+    if (state.attemptsLeft === 2 && i < 2) shouldShow = true;
+    if (state.attemptsLeft === 1) shouldShow = true;
+
+    if (shouldShow) {
+      tile.classList.remove('hidden-tile');
+    } else {
+      tile.classList.add('hidden-tile');
+    }
+  }
+}
+
+// ==========================================
+// 4. GUESSING LOGIC
+// ==========================================
+btnSubmitGuess.addEventListener('click', processGuess);
+guessInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') processGuess();
+});
+
+function processGuess() {
+  const userGuess = guessInput.value.trim().toLowerCase();
+  const correctTitle = state.secretTitle.trim().toLowerCase();
+
+  if (!userGuess) {
+    guessInput.placeholder = "⚠️ Please type a guess first!";
+    return;
+  }
+
+  const guesserName = state.activePlayer === 1 ? state.p2Name : state.p1Name;
+
+  if (userGuess === correctTitle) {
+    if (state.activePlayer === 1) {
+      state.p2Score++;
+    } else {
+      state.p1Score++;
+    }
+    resultStatus.innerText = `🎉 Correct! ${guesserName} wins the round!`;
+    endRound();
+  } else {
+    state.attemptsLeft--;
+    attemptsLeftSpan.innerText = state.attemptsLeft;
+    guessInput.value = "";
+
+    updateFragmentVisibility();
+
+    if (state.attemptsLeft <= 0) {
+      const setterName = state.activePlayer === 1 ? state.p1Name : state.p2Name;
+      resultStatus.innerText = `❌ Out of attempts! ${setterName} wins the round!`;
+      if (state.activePlayer === 1) {
+        state.p1Score++;
+      } else {
+        state.p2Score++;
+      }
+      endRound();
+    } else {
+      guessInput.placeholder = `Wrong! New clue unlocked. Try again:`;
+    }
+  }
+  updateScoreboard();
+}
+
+// ==========================================
+// REVEAL & CONFETTI CELEBRATION
+// ==========================================
+function endRound() {
+  revealImg.src = state.currentImageSrc;
+  revealedTitle.innerText = state.secretTitle;
+
+  // Check if someone reached 3 points to win the match
+  if (state.p1Score >= 3 || state.p2Score >= 3) {
+    const matchWinner = state.p1Score >= 3 ? state.p1Name : state.p2Name;
+    resultStatus.innerText += `\n\n🏆 🌟 ${matchWinner} wins the entire match! 🌟`;
+    btnNextRound.innerText = "Start New Match";
+
+    // MASSIVE MATCH-WINNING CONFETTI EXPLOSION
+    var duration = 3 * 1000;
+    var end = Date.now() + duration;
+    (function frame() {
+      confetti({
+        particleCount: 7,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 }
+      });
+      confetti({
+        particleCount: 7,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 }
+      });
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    })();
+
+  } else {
+    btnNextRound.innerText = "Next Round";
+
+    // STANDARD ROUND WIN CONFETTI BURST
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  }
+
+  switchScreen('reveal-screen');
+}
+
+// ==========================================
+// 5. NEXT ROUND / NEW MATCH RESET
+// ==========================================
+btnNextRound.addEventListener('click', () => {
+  // If a match was won, reset scores to 0 for a fresh game
+  if (state.p1Score >= 3 || state.p2Score >= 3) {
+    state.p1Score = 0;
+    state.p2Score = 0;
+    updateScoreboard();
+  }
+
+  state.activePlayer = state.activePlayer === 1 ? 2 : 1;
+  
+  state.currentImageSrc = "";
+  state.secretTitle = "";
+  secretTitleInput.value = "";
+  btnLockPuzzle.disabled = true;
+  dropZone.querySelector('p').innerHTML = `📁 Drag & Drop an Image here<br>OR<br>📋 Click here and press <strong>Ctrl+V</strong> to Paste from Google!`;
+
+  updateTurnText();
+  switchScreen('upload-screen');
+});

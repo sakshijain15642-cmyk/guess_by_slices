@@ -2,60 +2,71 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Guess from the Slices!</title>
+  <!-- Confetti Library CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/canvas-confetti.browser.min.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="game-container">
-    <header>
-      <h1>Guess from the Slices!
-      <br>🎬Lights! Camera! Action! 🎬
-      </h1>
-
-      <div id="scoreboard">
-        <span>P1: <strong id="score-p1">0</strong></span>
-        <span id="round-tracker">Round 1 / 3</span>
-        <span>P2: <strong id="score-p2">0</strong></span>
-      </div>
+  <!-- Rest of your body code remains unchanged -->
+   <div class="game-container">
+    <h1>Guess from the Slices!
+    <br>🎬Lights! Camera! Action! 🎬
+    </h1>
+    <div id="scoreboard" style="display: none;">
+   <!-- Scoreboard populated dynamically -->
+    </div>
     </header>
 
-    <!-- STEP 1: PLAYER CREATES PUZZLE -->
-    <div id="screen-picker" class="screen active">
-      <h2 id="picker-turn-label">Player 1: Pick an Image</h2>
-      <div class="drop-zone" id="drop-zone">
-        <p>📁 Drag & Drop Movie Poster or Album Cover<br>or <strong>Click to Browse</strong></p>
-        <input type="file" id="image-input" accept="image/*" hidden>
-      </div>
-      <input type="text" id="answer-input" placeholder="Enter full movie/album name..." />
-      <button id="btn-submit-puzzle" disabled>Lock In Puzzle 🔒</button>
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen" class="screen active">
+      <h2>Player Setup</h2>
+      <p>Enter player names to begin the showdown!</p>
+      <input type="text" id="p1-name-input" placeholder="Player 1 Name" value="Player 1">
+      <input type="text" id="p2-name-input" placeholder="Player 2 Name" value="Player 2">
+      <button id="btn-start-match">Start Match</button>
     </div>
 
-<!-- STEP 2: PLAYER GUESSES -->
-<div id="screen-guess" class="screen">
-  <h2 id="guesser-turn-label">Player 2: Guess the Title!</h2>
-  
-  <!-- 4 Fragments Grid rendered dynamically here -->
-  <div id="fragment-board" class="fragment-board"></div>
+    <!-- UPLOAD SCREEN -->
+    <div id="upload-screen" class="screen">
+      <h3 id="turn-indicator-upload">Player 1: Set the Puzzle</h3>
+      <div id="drop-zone" class="drop-zone" tabindex="0">
+        <p>📁 Drag & Drop an Image here<br>OR<br>📋 Click here and press <strong>Ctrl+V</strong> to Paste from Google!</p>
+        <input type="file" id="file-input" accept="image/*" style="display: none;">
+      </div>
+      <input type="text" id="secret-title-input" placeholder="Enter Movie / Album Title...">
+      <button id="btn-lock-puzzle" disabled>Lock In Puzzle</button>
+    </div>
 
-  <div class="guess-controls">
-    <input type="text" id="guess-input" placeholder="What movie or album is this?" />
-    <button id="btn-submit-guess">Submit Guess</button>
-    <p id="attempts-left">Attempts left: <strong>3</strong></p>
-  </div>
-</div>
+    <!-- GUESSING SCREEN -->
+    <div id="guess-screen" class="screen">
+      <h3 id="turn-indicator-guess">Player 2's Turn to Guess!</h3>
+      <p>Attempts left: <span id="attempts-left">3</span></p>
+      
+      <div class="fragment-board">
+        <div class="fragment-tile" id="tile-0"></div>
+        <div class="fragment-tile" id="tile-1"></div>
+        <div class="fragment-tile" id="tile-2"></div>
+        <div class="fragment-tile" id="tile-3"></div>
+      </div>
 
-    <!-- STEP 3: ROUND RESULT REVEAL -->
-    <div id="screen-result" class="screen">
-      <h2 id="result-status">Correct! 🎉</h2>
+      <input type="text" id="guess-input" placeholder="Type your guess...">
+      <button id="btn-submit-guess">Submit Guess</button>
+    </div>
+
+    <!-- REVEAL SCREEN -->
+    <div id="reveal-screen" class="screen">
+      <h2 id="result-status">Round Over!</h2>
       <div class="reveal-container">
-        <img id="revealed-image" src="" alt="Revealed Cover" />
-        <p id="revealed-title"></p>
+        <img id="reveal-img" src="" alt="Full Image">
+        <p>The Answer Was:</p>
+        <div id="revealed-title">Movie Title</div>
       </div>
-      <button id="btn-next-round">Next Round ➔</button>
+      <button id="btn-next-round">Next Round</button>
     </div>
   </div>
 
-  <canvas id="offscreen-canvas" style="display: none;"></canvas>
   <script src="game.js"></script>
 </body>
 </html>
