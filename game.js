@@ -15,9 +15,10 @@ const state = {
 };
 
 // ==========================================
-// ADD CLIPBOARD PASTE SUPPORT (CTRL+V)
+// ROBUST CLIPBOARD PASTE SUPPORT
 // ==========================================
-window.addEventListener('paste', (e) => {
+dropZone.addEventListener('paste', (e) => {
+  e.preventDefault();
   const items = e.clipboardData.items;
   
   for (let i = 0; i < items.length; i++) {
@@ -28,7 +29,7 @@ window.addEventListener('paste', (e) => {
       reader.onload = (event) => {
         state.currentImageSrc = event.target.result;
         btnSubmitPuzzle.disabled = false;
-        dropZone.querySelector('p').innerHTML = `✅ Image Pasted from Clipboard!`;
+        dropZone.querySelector('p').innerHTML = `✅ Image Pasted Successfully!`;
       };
       
       reader.readAsDataURL(blob);
@@ -36,7 +37,6 @@ window.addEventListener('paste', (e) => {
     }
   }
 });
-
 // DOM Elements
 const dropZone = document.getElementById('drop-zone');
 const imageInput = document.getElementById('image-input');
