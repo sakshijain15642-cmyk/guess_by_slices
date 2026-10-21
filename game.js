@@ -170,38 +170,40 @@ dropZone.addEventListener('paste', (e) => {
   }
 });
 
-// Mobile & Laptop Button Paste (Uses browser Clipboard API)
-const btnPasteClipboard = document.getElementById('btn-paste-clipboard');
-if (btnPasteClipboard) {
-  btnPasteClipboard.addEventListener('click', async () => {
-    playSound('click');
-    try {
-      if (!navigator.clipboard || !navigator.clipboard.read) {
-        alert("Direct clipboard reading is not supported by your browser. Use file upload or Ctrl+V instead!");
-        return;
-      }
-      const clipboardItems = await navigator.clipboard.read();
-      let imageFound = false;
+// ==========================================
+// 2. IMAGE UPLOAD & UNIVERSAL PASTE SUPPORT
+// ==========================================
+dropZone.addEventListener('click', () => {
+  // If clicked, open file picker (great for mobile photo libraries)
+  fileInput.click();
+});
 
-      for (const item of clipboardItems) {
-        const imageType = item.types.find(type => type.startsWith('image/'));
-        if (imageType) {
-          const blob = await item.getType(imageType);
-          handleImageFile(blob);
-          imageFound = true;
-          break;
-        }
-      }
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) handleImageFile(file);
+});
 
-      if (!imageFound) {
-        alert("No image found on your clipboard! Copy an image from Google first.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Permission denied or clipboard empty. Try using Ctrl+V or uploading a file!");
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); });
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file) handleImageFile(file);
+});
+
+// Universal Paste Event (Works for Laptop Ctrl+V AND Mobile Long-Press -> Paste)
+dropZone.addEventListener('paste', (e) => {
+  e.preventDefault();
+  const items = e.clipboardData || e.originalEvent.clipboardData;
+  if (!items) return;
+
+  for (let i = 0; i < items.items.length; i++) {
+    if (items.items[i].type.indexOf('image') !== -1) {
+      const blob = items.items[i].getAsFile();
+      handleImageFile(blob);
+      break;
     }
-  });
-}
+  }
+});
 
 function handleImageFile(file) {
   playSound('click');

@@ -31,14 +31,11 @@
 <!-- UPLOAD SCREEN -->
     <div id="upload-screen" class="screen">
       <h3 id="turn-indicator-upload">Player 1: Set the Puzzle</h3>
-      <div id="drop-zone" class="drop-zone" tabindex="0">
-        <p>📁 Drag & Drop an Image here<br>OR<br>📋 Press <strong>Ctrl+V</strong> (Laptop)</p>
+      <div id="drop-zone" class="drop-zone" contenteditable="true" tabindex="0">
+        <p>📁 Tap here to upload from Photo Library<br>OR<br>📋 Long-press here & tap <strong>Paste</strong> (Mobile & Laptop)</p>
         <input type="file" id="file-input" accept="image/*" style="display: none;">
       </div>
       
-      <!-- NEW: Mobile-friendly paste button -->
-      <button id="btn-paste-clipboard" type="button" style="background-color: var(--accent); margin-bottom: 15px;">📋 Paste Image from Clipboard</button>
-
       <input type="text" id="secret-title-input" placeholder="Enter Movie / Album Title...">
       <button id="btn-lock-puzzle" disabled>Lock In Puzzle</button>
     </div>
