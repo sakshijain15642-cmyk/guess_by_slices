@@ -141,7 +141,7 @@ btnStartMatch.addEventListener('click', () => {
 });
 
 // ==========================================
-// 2. IMAGE UPLOAD & CLIPBOARD PASTE SUPPORT
+// 2. IMAGE UPLOAD & CROSS-DEVICE PASTE SUPPORT
 // ==========================================
 dropZone.addEventListener('click', () => fileInput.click());
 
@@ -157,6 +157,7 @@ dropZone.addEventListener('drop', (e) => {
   if (file) handleImageFile(file);
 });
 
+// Desktop Keyboard Paste (Ctrl+V)
 dropZone.addEventListener('paste', (e) => {
   e.preventDefault();
   const items = e.clipboardData.items;
@@ -169,6 +170,39 @@ dropZone.addEventListener('paste', (e) => {
   }
 });
 
+// Mobile & Laptop Button Paste (Uses browser Clipboard API)
+const btnPasteClipboard = document.getElementById('btn-paste-clipboard');
+if (btnPasteClipboard) {
+  btnPasteClipboard.addEventListener('click', async () => {
+    playSound('click');
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.read) {
+        alert("Direct clipboard reading is not supported by your browser. Use file upload or Ctrl+V instead!");
+        return;
+      }
+      const clipboardItems = await navigator.clipboard.read();
+      let imageFound = false;
+
+      for (const item of clipboardItems) {
+        const imageType = item.types.find(type => type.startsWith('image/'));
+        if (imageType) {
+          const blob = await item.getType(imageType);
+          handleImageFile(blob);
+          imageFound = true;
+          break;
+        }
+      }
+
+      if (!imageFound) {
+        alert("No image found on your clipboard! Copy an image from Google first.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Permission denied or clipboard empty. Try using Ctrl+V or uploading a file!");
+    }
+  });
+}
+
 function handleImageFile(file) {
   playSound('click');
   const reader = new FileReader();
@@ -179,7 +213,6 @@ function handleImageFile(file) {
   };
   reader.readAsDataURL(file);
 }
-
 // ==========================================
 // 3. LOCK IN PUZZLE & SETUP ZOOMED CROPS
 // ==========================================

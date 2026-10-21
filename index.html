@@ -28,17 +28,21 @@
       <button id="btn-start-match">Start Match</button>
     </div>
 
-    <!-- UPLOAD SCREEN -->
+<!-- UPLOAD SCREEN -->
     <div id="upload-screen" class="screen">
       <h3 id="turn-indicator-upload">Player 1: Set the Puzzle</h3>
       <div id="drop-zone" class="drop-zone" tabindex="0">
-        <p>📁 Drag & Drop an Image here<br>OR<br>📋 Click here and press <strong>Ctrl+V</strong> to Paste from Google!</p>
+        <p>📁 Drag & Drop an Image here<br>OR<br>📋 Press <strong>Ctrl+V</strong> (Laptop)</p>
         <input type="file" id="file-input" accept="image/*" style="display: none;">
       </div>
+      
+      <!-- NEW: Mobile-friendly paste button -->
+      <button id="btn-paste-clipboard" type="button" style="background-color: var(--accent); margin-bottom: 15px;">📋 Paste Image from Clipboard</button>
+
       <input type="text" id="secret-title-input" placeholder="Enter Movie / Album Title...">
       <button id="btn-lock-puzzle" disabled>Lock In Puzzle</button>
     </div>
-
+        
     <!-- GUESSING SCREEN -->
     <div id="guess-screen" class="screen">
       <h3 id="turn-indicator-guess">Player 2's Turn to Guess!</h3>
