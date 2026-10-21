@@ -13,6 +13,69 @@ const state = {
   tilePositions: []
 };
 
+// ==========================================
+// AUDIO SYNTHESIZER (No external files needed!)
+// ==========================================
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound(type) {
+  if (!audioCtx) return;
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  const now = audioCtx.currentTime;
+
+  if (type === 'click') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+    osc.start(now);
+    osc.stop(now + 0.05);
+  } else if (type === 'correct') {
+    // Ascending chime
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(900, now + 0.3);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+    osc.start(now);
+    osc.stop(now + 0.35);
+  } else if (type === 'wrong') {
+    // Low buzzer
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.setValueAtTime(100, now + 0.1);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    osc.start(now);
+    osc.stop(now + 0.3);
+  } else if (type === 'win') {
+    // Victory Fanfare arpeggio
+    const notes = [440, 554.37, 659.25, 880];
+    notes.forEach((freq, idx) => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.connect(g);
+      g.connect(audioCtx.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(freq, now + idx * 0.12);
+      g.gain.setValueAtTime(0.15, now + idx * 0.12);
+      g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.25);
+      o.start(now + idx * 0.12);
+      o.stop(now + idx * 0.12 + 0.25);
+    });
+  }
+}
+
 // DOM Elements
 const setupScreen = document.getElementById('setup-screen');
 const uploadScreen = document.getElementById('upload-screen');
@@ -65,6 +128,7 @@ function updateTurnText() {
 // 1. SETUP NAMES
 // ==========================================
 btnStartMatch.addEventListener('click', () => {
+  playSound('click');
   const p1 = document.getElementById('p1-name-input').value.trim();
   const p2 = document.getElementById('p2-name-input').value.trim();
   
@@ -106,6 +170,7 @@ dropZone.addEventListener('paste', (e) => {
 });
 
 function handleImageFile(file) {
+  playSound('click');
   const reader = new FileReader();
   reader.onload = (event) => {
     state.currentImageSrc = event.target.result;
@@ -119,6 +184,7 @@ function handleImageFile(file) {
 // 3. LOCK IN PUZZLE & SETUP ZOOMED CROPS
 // ==========================================
 btnLockPuzzle.addEventListener('click', () => {
+  playSound('click');
   const title = secretTitleInput.value.trim();
   
   if (!state.currentImageSrc) {
@@ -196,6 +262,7 @@ function processGuess() {
   const guesserName = state.activePlayer === 1 ? state.p2Name : state.p1Name;
 
   if (userGuess === correctTitle) {
+    playSound('correct');
     if (state.activePlayer === 1) {
       state.p2Score++;
     } else {
@@ -211,6 +278,7 @@ function processGuess() {
     updateFragmentVisibility();
 
     if (state.attemptsLeft <= 0) {
+      playSound('wrong');
       const setterName = state.activePlayer === 1 ? state.p1Name : state.p2Name;
       resultStatus.innerText = `❌ Out of attempts! ${setterName} wins the round!`;
       if (state.activePlayer === 1) {
@@ -220,6 +288,7 @@ function processGuess() {
       }
       endRound();
     } else {
+      playSound('wrong');
       guessInput.placeholder = `Wrong! New clue unlocked. Try again:`;
     }
   }
@@ -227,8 +296,40 @@ function processGuess() {
 }
 
 // ==========================================
-// REVEAL & CONFETTI CELEBRATION
+// 5. CONFETTI & REVEAL CELEBRATIONS
 // ==========================================
+function triggerConfetti() {
+  const colors = ['#e67e22', '#2c3e50', '#e74c3c', '#2ecc71', '#f1c40f', '#3498db'];
+  
+  for (let i = 0; i < 60; i++) {
+    const particle = document.createElement('div');
+    particle.style.position = 'fixed';
+    particle.style.width = '10px';
+    particle.style.height = '10px';
+    particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    particle.style.left = (window.innerWidth / 2) + 'px';
+    particle.style.top = '40%';
+    particle.style.borderRadius = '50%';
+    particle.style.zIndex = '9999';
+    particle.style.pointerEvents = 'none';
+    particle.style.transition = 'transform 1.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 1.2s ease-out';
+    
+    document.body.appendChild(particle);
+
+    const angle = Math.random() * Math.PI * 2;
+    const distance = Math.random() * 250 + 50;
+    const targetX = Math.cos(angle) * distance;
+    const targetY = Math.sin(angle) * distance - 100;
+
+    setTimeout(() => {
+      particle.style.transform = `translate(${targetX}px, ${targetY + 200}px) rotate(${Math.random() * 360}deg) scale(${Math.random() * 0.8 + 0.4})`;
+      particle.style.opacity = '0';
+    }, 20);
+
+    setTimeout(() => particle.remove(), 1300);
+  }
+}
+
 function endRound() {
   revealImg.src = state.currentImageSrc;
   revealedTitle.innerText = state.secretTitle;
@@ -239,46 +340,25 @@ function endRound() {
     resultStatus.innerText += `\n\n🏆 🌟 ${matchWinner} wins the entire match! 🌟`;
     btnNextRound.innerText = "Start New Match";
 
-    // MASSIVE MATCH-WINNING CONFETTI EXPLOSION
-    var duration = 3 * 1000;
-    var end = Date.now() + duration;
-    (function frame() {
-      confetti({
-        particleCount: 7,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0 }
-      });
-      confetti({
-        particleCount: 7,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1 }
-      });
-      if (Date.now() < end) {
-        requestAnimationFrame(frame);
-      }
-    })();
+    playSound('win');
+    triggerConfetti();
+    setTimeout(triggerConfetti, 300);
+    setTimeout(triggerConfetti, 600);
 
   } else {
     btnNextRound.innerText = "Next Round";
-
-    // STANDARD ROUND WIN CONFETTI BURST
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
+    triggerConfetti();
   }
 
   switchScreen('reveal-screen');
 }
 
 // ==========================================
-// 5. NEXT ROUND / NEW MATCH RESET
+// 6. NEXT ROUND / NEW MATCH RESET
 // ==========================================
 btnNextRound.addEventListener('click', () => {
-  // If a match was won, reset scores to 0 for a fresh game
+  playSound('click');
+  
   if (state.p1Score >= 3 || state.p2Score >= 3) {
     state.p1Score = 0;
     state.p2Score = 0;
